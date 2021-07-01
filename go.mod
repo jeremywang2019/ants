@@ -1,4 +1,4 @@
-module github.com/panjf2000/ants/v2
+module github.com/jeremywang2019/ants/v2
 
 go 1.14
 

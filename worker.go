@@ -23,6 +23,7 @@
 package ants
 
 import (
+	"math/rand"
 	"runtime"
 	"time"
 )
@@ -39,11 +40,15 @@ type goWorker struct {
 
 	// recycleTime will be update when putting a worker back into queue.
 	recycleTime time.Time
+	id          string
 }
 
 // run starts a goroutine to repeat the process
 // that performs the function calls.
 func (w *goWorker) run() {
+	if w.id == "" {
+		w.id = getRandomString(8)
+	}
 	w.pool.incRunning()
 	go func() {
 		defer func() {
@@ -67,10 +72,24 @@ func (w *goWorker) run() {
 			if f == nil {
 				return
 			}
+			w.pool.options.Logger.Printf("goWorker start:%s", w.id)
 			f()
+			w.pool.options.Logger.Printf("goWorker over:%s", w.id)
 			if ok := w.pool.revertWorker(w); !ok {
 				return
 			}
 		}
 	}()
+}
+
+//生成随机字符串
+func getRandomString(length int) string {
+	str := "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+	bytes := []byte(str)
+	result := []byte{}
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
+	for i := 0; i < length; i++ {
+		result = append(result, bytes[r.Intn(len(bytes))])
+	}
+	return string(result)
 }

@@ -23,6 +23,7 @@
 package ants
 
 import (
+	"fmt"
 	"math/rand"
 	"runtime"
 	"time"
@@ -72,9 +73,15 @@ func (w *goWorker) run() {
 			if f == nil {
 				return
 			}
-			w.pool.options.Logger.Printf("goWorker start:%s", w.id)
+			select {
+			case w.pool.ch <- fmt.Sprintf("start,%s", w.id):
+			default:
+			}
 			f()
-			w.pool.options.Logger.Printf("goWorker over:%s", w.id)
+			select {
+			case w.pool.ch <- fmt.Sprintf("stop,%s", w.id):
+			default:
+			}
 			if ok := w.pool.revertWorker(w); !ok {
 				return
 			}

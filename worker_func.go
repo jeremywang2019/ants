@@ -23,6 +23,7 @@
 package ants
 
 import (
+	"fmt"
 	"runtime"
 	"time"
 )
@@ -39,11 +40,15 @@ type goWorkerWithFunc struct {
 
 	// recycleTime will be update when putting a worker back into queue.
 	recycleTime time.Time
+	id          string
 }
 
 // run starts a goroutine to repeat the process
 // that performs the function calls.
 func (w *goWorkerWithFunc) run() {
+	if w.id == "" {
+		w.id = getRandomString(8)
+	}
 	w.pool.incRunning()
 	go func() {
 		defer func() {
@@ -67,7 +72,15 @@ func (w *goWorkerWithFunc) run() {
 			if args == nil {
 				return
 			}
+			select {
+			case w.pool.ch <- fmt.Sprintf("start,%s", w.id):
+			default:
+			}
 			w.pool.poolFunc(args)
+			select {
+			case w.pool.ch <- fmt.Sprintf("stop,%s", w.id):
+			default:
+			}
 			if ok := w.pool.revertWorker(w); !ok {
 				return
 			}

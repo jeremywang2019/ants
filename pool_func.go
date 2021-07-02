@@ -61,6 +61,12 @@ type PoolWithFunc struct {
 	blockingNum int
 
 	options *Options
+
+	ch chan string
+}
+
+func (p *PoolWithFunc) ReturnChan() <-chan string {
+	return p.ch
 }
 
 // purgePeriodically clears expired workers periodically which runs in an individual goroutine, as a scavenger.
@@ -135,6 +141,7 @@ func NewPoolWithFunc(size int, pf func(interface{}), options ...Option) (*PoolWi
 		poolFunc: pf,
 		lock:     internal.NewSpinLock(),
 		options:  opts,
+		ch:       make(chan string, 1000),
 	}
 	p.workerCache.New = func() interface{} {
 		return &goWorkerWithFunc{

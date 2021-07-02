@@ -59,6 +59,8 @@ type Pool struct {
 	blockingNum int
 
 	options *Options
+
+	ch chan string
 }
 
 // purgePeriodically clears expired workers periodically which runs in an individual goroutine, as a scavenger.
@@ -115,6 +117,7 @@ func NewPool(size int, options ...Option) (*Pool, error) {
 		capacity: int32(size),
 		lock:     internal.NewSpinLock(),
 		options:  opts,
+		ch:       make(chan string, 1000),
 	}
 	p.workerCache.New = func() interface{} {
 		return &goWorker{
@@ -152,6 +155,23 @@ func (p *Pool) Submit(task func()) error {
 	}
 	w.task <- task
 	return nil
+}
+
+// Submit submits a task to this pool.
+func (p *Pool) SubmitGetID(task func()) (string, error) {
+	if p.IsClosed() {
+		return "", ErrPoolClosed
+	}
+	var w *goWorker
+	if w = p.retrieveWorker(); w == nil {
+		return "", ErrPoolOverload
+	}
+	w.task <- task
+	return w.id, nil
+}
+
+func (p *Pool) ReturnChan() <-chan string {
+	return p.ch
 }
 
 // Running returns the number of the currently running goroutines.

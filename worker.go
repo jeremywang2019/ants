@@ -55,6 +55,10 @@ func (w *goWorker) run() {
 		defer func() {
 			w.pool.decRunning()
 			w.pool.workerCache.Put(w)
+			select {
+			case w.pool.ch <- fmt.Sprintf("delete,%s", w.id):
+			default:
+			}
 			if p := recover(); p != nil {
 				if ph := w.pool.options.PanicHandler; ph != nil {
 					ph(p)

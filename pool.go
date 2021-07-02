@@ -123,6 +123,7 @@ func NewPool(size int, options ...Option) (*Pool, error) {
 		return &goWorker{
 			pool: p,
 			task: make(chan func(), workerChanCap),
+			id:   getRandomString(8),
 		}
 	}
 	if p.options.PreAlloc {
